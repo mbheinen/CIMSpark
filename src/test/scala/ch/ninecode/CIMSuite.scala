@@ -6,6 +6,8 @@ import org.junit.runner.RunWith
 import org.scalatest.FunSuite
 import org.scalatest.junit.JUnitRunner
 
+import ch.ninecode.model._
+
 class CIMSuite extends FunSuite
 {
   /**
@@ -21,9 +23,39 @@ class CIMSuite extends FunSuite
     test ("Basic")
     {
         val xml = "yadda yadda <cim:PSRType rdf:ID=\"PSRType_Substation\">\n<cim:IdentifiedObject.name>Substation</cim:IdentifiedObject.name>\n</cim:PSRType> foo bar"
-        val parser = new CIM (xml.toString ())
+        val parser = new CHIM (xml.toString ())
         val map = parser.parse ()
         assert (map.size === 1)
+    }
+
+    def subclass (x: Element, parser: Parseable[Element with Product]): Element =
+    {
+        var ret = x
+
+        while ((null != ret) && (ret.getClass () != parser.runtime_class))
+            ret = ret.sup
+
+        return (ret)
+    }
+
+    test ("Classes")
+    {
+        val xml = "yadda yadda <cim:PSRType rdf:ID=\"PSRType_Substation\">\n<cim:IdentifiedObject.name>Substation</cim:IdentifiedObject.name>\n</cim:PSRType> foo bar"
+        val parser = new CHIM (xml.toString ())
+        val map = parser.parse ()
+        val element = map.getOrElse ("PSRType_Substation", null)
+        assert (element != null)
+        CHIM.apply_to_all_classes (
+            (name: String, parser: Parseable[Element with Product]) =>
+            {
+                val cls = subclass (element, parser)
+                if (null != cls)
+                {
+                    markup ("class " + cls.toString ())
+                    markup (parser.runtime_class.toString () + " boolean " + (element.getClass () == parser.runtime_class))
+                }
+            }
+        )
     }
 
     test ("Voltage")
@@ -37,10 +69,10 @@ class CIMSuite extends FunSuite
                         <cim:BaseVoltage.nominalVoltage>0.400000000000</cim:BaseVoltage.nominalVoltage>
                 </cim:BaseVoltage>
             </rdf:RDF>;
-        val parser = new CIM (xml.toString ())
+        val parser = new CHIM (xml.toString ())
         val map = parser.parse ()
         val voltage = map.apply ("BaseVoltage_0.400000000000").asInstanceOf[BaseVoltage]
-        assert (voltage.voltage === 400)
+        assert (voltage.nominalVoltage.toDouble === 0.40)
     }
 
     test ("Illegal Voltage")
@@ -52,7 +84,7 @@ class CIMSuite extends FunSuite
                         <cim:BaseVoltage.nominalVoltage>x.400000000000</cim:BaseVoltage.nominalVoltage>
                 </cim:BaseVoltage>
             </rdf:RDF>;
-        val parser = new CIM (xml.toString ())
+        val parser = new CHIM (xml.toString ())
         intercept[Exception]
         {
             val map = parser.parse ()
@@ -69,21 +101,12 @@ class CIMSuite extends FunSuite
                     <cim:CoordinateSystem.crsUrn>EPSG::4326</cim:CoordinateSystem.crsUrn>
                 </cim:CoordinateSystem>
             </rdf:RDF>;
-        val parser = new CIM (xml.toString ())
+        val parser = new CHIM (xml.toString ())
         val map = parser.parse ()
         assert (map.size === 1)
         val cs = map apply "wgs_84"
         assert (cs.isInstanceOf[CoordinateSystem])
         val cs2 = cs.asInstanceOf[CoordinateSystem]
-        assert (cs2.urn === "EPSG::4326")
-    }
-
-    test ("Read Partial")
-    {
-        val xml = CIM.read ("data/dump_ews.xml", 33554432, 1024 * 1024, 0) // exactly a megabyte
-        val parser = new CIM (xml)
-        val map = parser.parse ()
-        assert (map.size != 0) // 2735
-        assert (map.filter (_.getClass() == classOf[Unknown]).size == 0)
+        assert (cs2.crsUrn === "EPSG::4326")
     }
 }

@@ -8,8 +8,21 @@ Spark access to Common Information Model (CIM) files as RDD and Hive SQL.
 This program reads in a CIM file which is a 
 standard interchange format based on IEC standards 61968 & 61970
 (see [CIM users group](http://cimug.ucaiug.org/default.aspx) for additional details)
-and produces a Spark Resilient Distributed Dataset (RDD).
-The RDD is exposed as a Hive2 table using Thrift.
+and produces a Spark Resilient Distributed Dataset (RDD) for each CIM class.
+
+![CIMScala Overview](https://rawgit.com/derrickoswald/CIMScala/master/img/Overview.svg "Overview diagram")
+
+These RDDs can be manipulated by native Spark programs written in
+[Scala, Java or Python](http://spark.apache.org/docs/latest/programming-guide.html),
+or can be accessed via [SparkR](http://spark.apache.org/docs/latest/sparkr.html) in R.  
+
+The RDDs are also exposed as Hive2 tables using Thrift for legacy JDBC access.
+
+#Architecture
+
+The architrecture follows the sample code from [Databricks](https://databricks.com/blog/2015/01/09/spark-sql-data-sources-api-unified-data-access-for-the-spark-platform.html).
+
+![CIMScala Architecture](https://rawgit.com/derrickoswald/CIMScala/master/img/Architecture.svg "High level architecture diagram")
 
 #Sample Usage
 

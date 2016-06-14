@@ -1,4 +1,4 @@
-package ch.ninecode
+package ch.ninecode.cim
 
 import java.io.File
 import java.io.FileInputStream
@@ -9,8 +9,12 @@ import org.apache.spark.SparkConf
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.rdd.RDD.rddToPairRDDFunctions
+import org.apache.spark.sql.Row
 import org.apache.spark.sql.hive.HiveContext
 import org.apache.spark.sql.hive.thriftserver.HiveThriftServer2
+
+import ch.ninecode.model.CHIM
+import ch.ninecode.model.Element
 
 //// NOTE: in order to get maven and scala to work together in Eclipse
 //// I needed to install the maven-scala plugin from here:
@@ -25,41 +29,6 @@ import org.apache.spark.sql.hive.thriftserver.HiveThriftServer2
  */
 object CIMRDD extends Logging
 {
-    def read (filename: String, offset: Long = 0, length: Long = 0): String =
-    {
-        val in = new FileInputStream (filename)
-        in.skip (offset)
-        val bytes = new Array[Byte] (length.asInstanceOf[Int]); // ToDo: handle file sizes bigger than 2GB
-        in.read (bytes)
-        val text = new org.apache.hadoop.io.Text ()
-        text.append (bytes, 0, length.asInstanceOf[Int])
-        val xml = text.toString ()
-
-        return (xml)
-    }
-
-    def rddFile (sc: SparkContext, filename: String, offset: Long = 0, length: Long = 0): RDD[Element] =
-    {
-        var size: Long = length
-        if (0 == size)
-            size = new File (filename).length () - offset
-        val xml = CIMRDD.read (filename, offset, size)
-        val parser = new CIM (xml, offset, offset + size)
-        val map = parser.parse ()
-        return (sc.parallelize (map.values.toSeq))
-    }
-
-    def rddHadoop (sc: SparkContext, hdfs: String): RDD[Element] =
-    {
-        // make a config
-        val configuration = new Configuration (sc.hadoopConfiguration)
-        configuration.set ("mapreduce.input.fileinputformat.inputdir", hdfs);
-
-        // RDD[(String, Element)]
-        val rdd = sc.newAPIHadoopRDD (configuration, classOf[CIMInputFormat], classOf[String], classOf[Element])
-        return (rdd.values)
-    }
-
     def main (args:Array[String])
     {
         val conf = new SparkConf ()
