@@ -110,7 +110,8 @@ class CIMNetworkTopologyProcessor (session: SparkSession, storage: StorageLevel)
                 false
             case "ACLineSegment" =>
                 val line = element.asInstanceOf[ACLineSegment]
-                val nonzero = ((line.Conductor.len > 0.0) && ((line.r > 0.0) || (line.x > 0.0)))
+                //val nonzero = ((line.Conductor.len > 0.0) && ((line.r > 0.0) || (line.x > 0.0)))
+                val nonzero = (line.Conductor.len > 0.0)
                 // log.debug ("ACLineSegment " + element.id + " " + line.Conductor.len + "m " + line.r + "+" + line.x + "jΩ/km " + !nonzero)
                 !nonzero
             case "Conductor" =>
